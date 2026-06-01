@@ -65,7 +65,29 @@ with tab2:
             st.success(f"Se encontraron {len(resultados)} resoluciones que contienen: '{palabra_clave}'")
             
             if not resultados.empty:
-                # Mostramos solo el nombre del archivo para que la tabla sea fácil de leer
-                st.dataframe(resultados[['NOMBRE_ARCHIVO']], use_container_width=True)
+                # 1. Preparamos la tabla básica con los nombres encontrados
+                df_mostrar = resultados[['NOMBRE_ARCHIVO']].copy()
+                
+                # 2. Cruzamos la información con tu Excel para traer los enlaces de Drive
+                if 'NOMBRE_ARCHIVO' in datos.columns and 'ENLACE_PDF' in datos.columns:
+                    # Une el Excel con los resultados usando el nombre del archivo como puente
+                    df_mostrar = pd.merge(df_mostrar, datos[['NOMBRE_ARCHIVO', 'ENLACE_PDF']], on='NOMBRE_ARCHIVO', how='left')
+                else:
+                    # Si aún no configuras el Excel, te avisa
+                    df_mostrar['ENLACE_PDF'] = "Faltan columnas en Excel"
+                
+                # 3. Mostramos la tabla con enlaces clickeables
+                st.dataframe(
+                    df_mostrar,
+                    column_config={
+                        "NOMBRE_ARCHIVO": "Nombre del Documento",
+                        "ENLACE_PDF": st.column_config.LinkColumn(
+                            "🔗 Enlace al Expediente", 
+                            display_text="Abrir PDF en Drive" # Esto oculta la URL larga y pone un texto limpio
+                        )
+                    },
+                    hide_index=True,
+                    use_container_width=True
+                )
         else:
             st.warning("El archivo de jurisprudencia aún no está disponible.")
